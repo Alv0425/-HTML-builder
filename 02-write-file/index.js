@@ -27,6 +27,4 @@ newReadLine.on('line', (data) => {
   }
 });
 
-newReadLine.on('SIGINT', () => {
-  endWrite();
-});
+newReadLine.on('SIGINT', () => endWrite());

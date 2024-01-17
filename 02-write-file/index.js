@@ -11,7 +11,9 @@ const newWriteStream = fs.createWriteStream(newPath, {
   encoding: 'utf8',
   flags: 'a',
 });
+
 const newReadLine = rl.createInterface(stdin, stdout);
+
 const endWrite = () => {
   newReadLine.write(message);
   process.exit();

@@ -67,7 +67,6 @@ async function extractInfo(npath, arr) {
   for (const file of allFiles) {
     const fileName = file.name;
     const fileDir = file.path;
-    console.log(fileDir);
     const filePath = path.join(fileDir, fileName);
     const fileDescr = {
       type: 'file',

@@ -6,7 +6,7 @@ let newPath = path.join(__dirname, 'secret-folder');
 const allFiles = [];
 
 function bytesToKb(size) {
-  return (size / 1024).toFixed(2) + 'Kb';
+  return (size / 1024).toFixed(2) + 'kb';
 }
 
 async function readDir(npath) {

@@ -1,11 +1,13 @@
 const path = require('path');
 const fs = require('fs');
 const { readdir } = require('fs/promises');
+const { pipeline } = require('stream/promises');
 
 const destPath = path.join(__dirname, 'project-dist', 'bundle.css');
 const sourcesDirPath = path.join(__dirname, 'styles');
 const sourcesPathes = [];
 
+// Get pathes of all style files to merge
 async function getSources() {
   const files = await readdir(sourcesDirPath, { withFileTypes: true });
   const allStyles = files.reduce((arr, file) => {
@@ -25,6 +27,7 @@ async function prepFile() {
   writeHeader.write('/* --- BUNDLE --- */\n');
 }
 
+// Asynchronyosly merge files
 async function mergeStyles() {
   for (const source of sourcesPathes) {
     const writeDelimeter = fs.createWriteStream(destPath, {
@@ -37,10 +40,11 @@ async function mergeStyles() {
       encoding: 'utf-8',
     });
     const readSource = fs.createReadStream(source, { encoding: 'utf-8' });
-    await readSource.pipe(writeSource);
+    await pipeline(readSource, writeSource);
   }
 }
 
+// Merge .css files to the bundle
 (async () => {
   await getSources();
   await prepFile();

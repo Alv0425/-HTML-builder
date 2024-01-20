@@ -5,10 +5,6 @@ const { stdout } = process;
 let newPath = path.join(__dirname, 'secret-folder');
 const allFiles = [];
 
-function bytesToKb(size) {
-  return (size / 1024).toFixed(2) + 'kb';
-}
-
 async function readDir(npath) {
   try {
     const files = await readdir(npath, { withFileTypes: true });
@@ -17,18 +13,17 @@ async function readDir(npath) {
         const filePath = path.join(npath, file.name);
         const stats = await stat(filePath);
         const ext = path.extname(file.name);
-        const name = path.basename(file.name, ext);
         const fileDescription = {
-          name: name,
-          extension: ext.slice(1),
-          size: bytesToKb(stats.size),
+          name: path.basename(file.name, ext),
+          extension: ext.replace('.', ''),
+          size: stats.size + 'b',
         };
         allFiles.push(fileDescription);
       }
     }
     return files;
   } catch (err) {
-    stdout.write(err);
+    stdout.write(err + '\n');
   }
 }
 

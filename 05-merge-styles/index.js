@@ -24,7 +24,7 @@ async function prepFile() {
   const writeHeader = fs.createWriteStream(destPath, {
     encoding: 'utf-8',
   });
-  writeHeader.write('/* --- BUNDLE --- */\n');
+  writeHeader.write('');
 }
 
 // Asynchronyosly merge files
@@ -34,7 +34,7 @@ async function mergeStyles() {
       flags: 'a',
       encoding: 'utf-8',
     });
-    writeDelimeter.write('\n' + `/* ${path.basename(source)} */` + '\n');
+    writeDelimeter.write(`/* ${path.basename(source)} */` + '\n');
     const writeSource = fs.createWriteStream(destPath, {
       flags: 'a',
       encoding: 'utf-8',

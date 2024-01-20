@@ -1,40 +1,15 @@
 const path = require('path');
-const {
-  readdir,
-  copyFile,
-  rmdir,
-  mkdir,
-  access,
-  unlink,
-} = require('fs/promises');
+const { readdir, copyFile, rm, mkdir, access } = require('fs/promises');
 
 const allFilesPaths = [];
 const dirPath = path.join(__dirname, 'files');
 const copyDirPath = path.join(__dirname, 'files-copy');
 const outputPaths = [];
 
-async function clearDir(dirPath) {
-  let files = await readdir(dirPath, { withFileTypes: true });
-  if (files) {
-    await Promise.all(
-      files.map(async (file) => {
-        let fullPath = path.join(dirPath, file.name);
-        if (file.isDirectory()) {
-          return clearDir(fullPath);
-        } else {
-          return unlink(fullPath);
-        }
-      }),
-    );
-    if (dirPath !== copyDirPath) {
-      await rmdir(dirPath);
-    }
-  }
-}
-
 async function createDir(newPath) {
   try {
-    await access(newPath);
+    await rm(newPath, { recursive: true, force: true });
+    await mkdir(newPath, { recursive: true });
   } catch (e) {
     if (e.code === 'ENOENT') {
       await mkdir(newPath, { recursive: true });
@@ -44,9 +19,8 @@ async function createDir(newPath) {
 
 async function copyAll(output) {
   for (const file of output) {
-    await access(file.input).then(() => {
-      copyFile(file.input, file.output);
-    });
+    await access(file.input);
+    await copyFile(file.input, file.output);
   }
 }
 
@@ -55,9 +29,8 @@ async function createDirThree(base, arr) {
   if (dirArr.length) {
     for (const dir of dirArr) {
       const newPath = path.join(base, dir.name);
-      await createDir(newPath).then(() => {
-        createDirThree(newPath, dir.files);
-      });
+      await createDir(newPath);
+      await createDirThree(newPath, dir.files);
     }
   }
 }
@@ -100,7 +73,6 @@ async function getPaths(base, filesPaths) {
 
 (async function () {
   await createDir(copyDirPath);
-  await clearDir(copyDirPath);
   await extractInfo(dirPath, allFilesPaths);
   await createDirThree(copyDirPath, allFilesPaths);
   await getPaths(copyDirPath, allFilesPaths);

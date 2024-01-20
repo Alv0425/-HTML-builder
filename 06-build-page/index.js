@@ -1,7 +1,7 @@
 const path = require('path');
 const { readdir, readFile, copyFile, rm, mkdir } = require('fs/promises');
-const fs = require('fs');
 const { pipeline } = require('stream/promises');
+const fs = require('fs');
 
 const distDirPath = path.join(__dirname, 'project-dist');
 const assetsSourcePath = path.join(__dirname, 'assets');
@@ -14,9 +14,9 @@ const htmlComponentsPath = path.join(__dirname, 'components');
 const htmlBundlePath = path.join(distDirPath, 'index.html');
 const htmlTemplPath = path.join(__dirname, 'template.html');
 
-const assets = [];
 const assetsPathes = [];
-const sourcesStylesPathes = [];
+const dirThree = [];
+const sourcesStylesPaths = [];
 const htmlTemplPaths = [];
 const componentsHTML = {};
 
@@ -24,12 +24,11 @@ const componentsHTML = {};
   // create dir three and copy assets
   await createDir(distDirPath);
   await createDir(destAssetsPath);
-  await extractInfo(assetsSourcePath, assets);
-  await createDirThree(destAssetsPath, assets);
-  await getAssetsPaths(destAssetsPath, assets);
+  await extractInfo(assetsSourcePath, destAssetsPath);
+  await createDirThree();
   await copyAll(assetsPathes);
   // merge styles
-  await getSources(stylesSourcesPath, sourcesStylesPathes, '.css');
+  await getSources(stylesSourcesPath, sourcesStylesPaths, '.css');
   await prepFile(stylesBundlePath);
   await mergeStyles();
   // generate HTML from template
@@ -59,8 +58,7 @@ async function generateHTML() {
 }
 
 /* ----------  Merge styles from styles folder  ----------  */
-
-// Get pathes of all files
+// get paths of all files
 async function getSources(dirpath, srcs, ext) {
   const files = await readdir(dirpath, { withFileTypes: true });
   const allStyles = files.reduce((arr, file) => {
@@ -72,7 +70,7 @@ async function getSources(dirpath, srcs, ext) {
   srcs.push(...allStyles);
 }
 
-//if file already exists, rewrite content
+// if file already exists, rewrite content
 async function prepFile(src) {
   const clearFile = fs.createWriteStream(src, {
     encoding: 'utf-8',
@@ -80,33 +78,20 @@ async function prepFile(src) {
   clearFile.write('');
 }
 
-// Asynchronyosly merge files
+// asynchronyosly merge files
 async function mergeStyles() {
-  for (const source of sourcesStylesPathes) {
-    const delimeter = () => {
-      return new Promise((res, rej) => {
-        const writeDelimeter = fs.createWriteStream(stylesBundlePath, {
-          flags: 'a',
-          encoding: 'utf-8',
-        });
-        writeDelimeter.write(`/* ${path.basename(source)} */` + '\n');
-        writeDelimeter.end();
-        writeDelimeter.on('finish', () => {
-          res(true);
-        });
-      });
-    };
+  for (const source of sourcesStylesPaths) {
     const writeStyle = fs.createWriteStream(stylesBundlePath, {
       flags: 'a',
       encoding: 'utf-8',
     });
     const readSource = fs.createReadStream(source, { encoding: 'utf-8' });
-    await delimeter();
     await pipeline(readSource, writeStyle);
   }
 }
 
 /* ----------  Create directories three and copy assets  ----------  */
+// create directory
 async function createDir(newPath) {
   try {
     await rm(newPath, { recursive: true, force: true });
@@ -117,54 +102,31 @@ async function createDir(newPath) {
     }
   }
 }
-
+// copy all files
 async function copyAll(output) {
   for (const file of output) await copyFile(file.input, file.output);
 }
-
-async function createDirThree(base, arr) {
-  let dirArr = arr.filter((file) => file.type === 'dir');
-  if (dirArr.length) {
-    for (const dir of dirArr) {
-      const newPath = path.join(base, dir.name);
-      await createDir(newPath);
-      await createDirThree(newPath, dir.files);
-    }
-  }
+// create dir three
+async function createDirThree() {
+  for (const dirPath of dirThree) await createDir(dirPath);
 }
-
-async function extractInfo(npath, arr) {
+// run recursively over directory for copying and extract paths of all subfolders and files
+async function extractInfo(npath, destPathBase) {
   const allFiles = await readdir(npath, { withFileTypes: true });
   for (const file of allFiles) {
     const fileName = file.name;
     const fileDir = file.path;
     const filePath = path.join(fileDir, fileName);
-    const fileDescr = {
-      type: 'file',
-      name: fileName,
-      path: filePath,
-    };
     if (file.isDirectory()) {
-      const subfolderPaths = [];
-      await extractInfo(filePath, subfolderPaths);
-      fileDescr.type = 'dir';
-      fileDescr.files = subfolderPaths;
+      const newBase = path.join(destPathBase, file.name);
+      dirThree.push(newBase);
+      await extractInfo(filePath, newBase);
+    } else {
+      const iopath = {
+        input: filePath,
+        output: path.join(destPathBase, file.name),
+      };
+      assetsPathes.push(iopath);
     }
-    arr.push(fileDescr);
   }
-}
-
-async function getAssetsPaths(base, filesPaths) {
-  await Promise.all(
-    filesPaths.map((filePath) => {
-      if (filePath.type === 'file') {
-        const iopath = {
-          input: filePath.path,
-          output: path.join(base, filePath.name),
-        };
-        return assetsPathes.push(iopath);
-      }
-      return getAssetsPaths(path.join(base, filePath.name), filePath.files);
-    }),
-  );
 }

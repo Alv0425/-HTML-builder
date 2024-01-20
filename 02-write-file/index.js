@@ -5,11 +5,10 @@ const { stdin, stdout } = process;
 
 const fileName = 'newfile.txt';
 const newPath = path.join(__dirname, fileName);
-const message = 'File ' + fileName + ' was successfully updated!';
+const message = '\nFile ' + fileName + ' was successfully updated!';
 
 const newWriteStream = fs.createWriteStream(newPath, {
   encoding: 'utf8',
-  flags: 'a',
 });
 
 const newReadLine = rl.createInterface(stdin, stdout);
@@ -19,7 +18,7 @@ const endWrite = () => {
   process.exit();
 };
 
-stdout.write('Please, write some test (to exit type "exit"):\n');
+stdout.write('Please, write text (to exit type "exit"):\n');
 
 newReadLine.on('line', (data) => {
   if (data === 'exit') {

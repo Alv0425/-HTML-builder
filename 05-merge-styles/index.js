@@ -10,11 +10,11 @@ const sourcesPaths = [];
 // get paths of all style files to merge
 async function getSources() {
   const files = await readdir(sourcesDirPath, { withFileTypes: true });
-  const allStyles = files.reduce((arr, file) => {
-    if (!file.isDirectory() && path.extname(file.name) === '.css') {
-      arr.push(path.join(file.path, file.name));
+  const allStyles = files.reduce((styles, file) => {
+    if (file.isFile() && path.extname(file.name) === '.css') {
+      styles.push(path.join(file.path, file.name));
     }
-    return arr;
+    return styles;
   }, []);
   sourcesPaths.push(...allStyles);
 }

@@ -14,19 +14,15 @@ const htmlComponentsPath = path.join(__dirname, 'components');
 const htmlBundlePath = path.join(distDirPath, 'index.html');
 const htmlTemplPath = path.join(__dirname, 'template.html');
 
-const assetsPathes = [];
-const dirThree = [];
 const sourcesStylesPaths = [];
 const htmlTemplPaths = [];
 const componentsHTML = {};
 
 (async () => {
-  // create dir three and copy assets
+  // create dir tree and copy assets
   await createDir(distDirPath);
   await createDir(destAssetsPath);
-  await extractInfo(assetsSourcePath, destAssetsPath);
-  await createDirThree();
-  await copyAll(assetsPathes);
+  await copyFiles(assetsSourcePath, destAssetsPath);
   // merge styles
   await getSources(stylesSourcesPath, sourcesStylesPaths, '.css');
   await prepFile(stylesBundlePath);
@@ -50,8 +46,12 @@ async function readComponents() {
 
 async function generateHTML() {
   let templ = await readFile(htmlTemplPath, { encoding: 'utf-8' });
-  for (const placeholder in componentsHTML) {
-    templ = templ.replaceAll(placeholder, componentsHTML[placeholder]);
+  const placeholders = templ.match(/\{\{[a-zA-Z-_]{1,}\}\}/g);
+  for (const placeholder of placeholders) {
+    const replacer = componentsHTML[placeholder]
+      ? componentsHTML[placeholder]
+      : '';
+    templ = templ.replaceAll(placeholder, replacer);
   }
   const writeHTML = fs.createWriteStream(htmlBundlePath, { encoding: 'utf-8' });
   writeHTML.write(templ);
@@ -72,9 +72,7 @@ async function getSources(dirpath, srcs, ext) {
 
 // if file already exists, rewrite content
 async function prepFile(src) {
-  const clearFile = fs.createWriteStream(src, {
-    encoding: 'utf-8',
-  });
+  const clearFile = fs.createWriteStream(src, 'utf-8');
   clearFile.write('');
 }
 
@@ -91,7 +89,6 @@ async function mergeStyles() {
 }
 
 /* ----------  Create directories three and copy assets  ----------  */
-// create directory
 async function createDir(newPath) {
   try {
     await rm(newPath, { recursive: true, force: true });
@@ -102,31 +99,21 @@ async function createDir(newPath) {
     }
   }
 }
-// copy all files
-async function copyAll(output) {
-  for (const file of output) await copyFile(file.input, file.output);
-}
-// create dir three
-async function createDirThree() {
-  for (const dirPath of dirThree) await createDir(dirPath);
-}
-// run recursively over directory for copying and extract paths of all subfolders and files
-async function extractInfo(npath, destPathBase) {
-  const allFiles = await readdir(npath, { withFileTypes: true });
+
+async function copyFiles(sourcePath, destPathBase) {
+  const allFiles = await readdir(sourcePath, { withFileTypes: true });
   for (const file of allFiles) {
-    const fileName = file.name;
-    const fileDir = file.path;
-    const filePath = path.join(fileDir, fileName);
+    const filePath = path.join(file.path, file.name);
     if (file.isDirectory()) {
       const newBase = path.join(destPathBase, file.name);
-      dirThree.push(newBase);
-      await extractInfo(filePath, newBase);
+      await createDir(newBase);
+      await copyFiles(filePath, newBase);
     } else {
-      const iopath = {
+      const copyPath = {
         input: filePath,
         output: path.join(destPathBase, file.name),
       };
-      assetsPathes.push(iopath);
+      await copyFile(copyPath.input, copyPath.output);
     }
   }
 }

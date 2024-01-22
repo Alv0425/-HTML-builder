@@ -5,12 +5,12 @@ const { stdout } = process;
 let newPath = path.join(__dirname, 'secret-folder');
 const allFiles = [];
 
-async function readDir(npath) {
+async function getFilesInfo(directoryPath) {
   try {
-    const files = await readdir(npath, { withFileTypes: true });
+    const files = await readdir(directoryPath, { withFileTypes: true });
     for (const file of files) {
-      if (!file.isDirectory()) {
-        const filePath = path.join(npath, file.name);
+      if (file.isFile()) {
+        const filePath = path.join(directoryPath, file.name);
         const stats = await stat(filePath);
         const ext = path.extname(file.name);
         const fileDescription = {
@@ -27,7 +27,7 @@ async function readDir(npath) {
   }
 }
 
-readDir(newPath).then(() => {
+getFilesInfo(newPath).then(() => {
   allFiles.forEach((file) => {
     stdout.write(
       file.name.padEnd(10, ' ') +

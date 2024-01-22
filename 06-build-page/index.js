@@ -43,7 +43,7 @@ async function readComponents() {
       readfile.on('data', (chunk) => {
         fileContent.push(chunk);
       });
-      readfile.on('close', () => {
+      readfile.on('end', () => {
         componentsHTML[placeholder] = fileContent.join('');
         res(true);
       });
@@ -53,11 +53,11 @@ async function readComponents() {
 
 async function generateHTML() {
   let templRead = fs.createReadStream(htmlTemplPath, { encoding: 'utf-8' });
-  let templ;
+  let templ = '';
   const templData = [];
   await new Promise((res) => {
     templRead.on('data', (chunk) => templData.push(chunk));
-    templRead.on('close', () => {
+    templRead.on('end', () => {
       templ = templData.join('');
       res(true);
     });

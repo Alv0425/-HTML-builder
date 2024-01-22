@@ -7,9 +7,7 @@ const fileName = 'newfile.txt';
 const newPath = path.join(__dirname, fileName);
 const line = '\n------------------------------------------\n';
 const message = line + 'File ' + fileName + ' was successfully updated!' + line;
-const newWriteStream = fs.createWriteStream(newPath, {
-  encoding: 'utf8',
-});
+const newWriteStream = fs.createWriteStream(newPath, 'utf8');
 
 const newReadLine = rl.createInterface(stdin, stdout);
 

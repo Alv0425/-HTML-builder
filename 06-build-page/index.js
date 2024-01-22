@@ -1,5 +1,5 @@
 const path = require('path');
-const { readdir, readFile, copyFile, rm, mkdir } = require('fs/promises');
+const { readdir, copyFile, rm, mkdir } = require('fs/promises');
 const { pipeline } = require('stream/promises');
 const fs = require('fs');
 
@@ -28,7 +28,6 @@ const componentsHTML = {};
   await mergeStyles();
   // generate HTML from template
   await getSources(htmlComponentsPath, htmlTemplPaths, '.html');
-  await prepFile(htmlBundlePath);
   await readComponents();
   await generateHTML();
 })();
@@ -36,15 +35,33 @@ const componentsHTML = {};
 /* ----------  Generate HTML file from template  ----------- */
 async function readComponents() {
   for (const compPath of htmlTemplPaths) {
-    const readfile = await readFile(compPath, { encoding: 'utf-8' });
+    const readfile = fs.createReadStream(compPath, { encoding: 'utf-8' });
     const name = path.basename(compPath, '.html');
     const placeholder = `{{${name}}}`;
-    componentsHTML[placeholder] = readfile;
+    const fileContent = [];
+    await new Promise((res) => {
+      readfile.on('data', (chunk) => {
+        fileContent.push(chunk);
+      });
+      readfile.on('close', () => {
+        componentsHTML[placeholder] = fileContent.join('');
+        res(true);
+      });
+    });
   }
 }
 
 async function generateHTML() {
-  let templ = await readFile(htmlTemplPath, { encoding: 'utf-8' });
+  let templRead = fs.createReadStream(htmlTemplPath, { encoding: 'utf-8' });
+  let templ;
+  const templData = [];
+  await new Promise((res) => {
+    templRead.on('data', (chunk) => templData.push(chunk));
+    templRead.on('close', () => {
+      templ = templData.join('');
+      res(true);
+    });
+  });
   const placeholders = templ.match(/\{\{[a-zA-Z-_]{1,}\}\}/g);
   for (const placeholder of placeholders) {
     const replacer = componentsHTML[placeholder]
@@ -69,25 +86,16 @@ async function getSources(dirpath, srcs, ext) {
   srcs.push(...allStyles);
 }
 
-// if file already exists, rewrite content
-async function prepFile(src) {
-  const clearFile = fs.createWriteStream(src, 'utf-8');
-  clearFile.write('');
-}
-
 async function mergeStyles() {
   const writeSource = fs.createWriteStream(stylesBundlePath, 'utf-8');
   for (const source of sourcesStylesPaths) {
     const readSource = fs.createReadStream(source, 'utf-8');
-    readSource.on('open', () => {
-      writeSource.write(`/* ${path.basename(source)} */` + '\n');
-    });
     await pipeline(readSource, writeSource, { end: false });
   }
   writeSource.end();
 }
 
-/* ----------  Create directories three and copy assets  ----------  */
+/* ----------  Create directories tree and copy assets  ----------  */
 async function createDir(newPath) {
   try {
     await rm(newPath, { recursive: true, force: true });

@@ -24,9 +24,6 @@ async function mergeStyles() {
   const writeSource = fs.createWriteStream(destPath, 'utf-8');
   for (const source of sourcesPaths) {
     const readSource = fs.createReadStream(source, 'utf-8');
-    readSource.on('open', () => {
-      writeSource.write(`/* ${path.basename(source)} */` + '\n');
-    });
     await pipeline(readSource, writeSource, { end: false });
   }
   writeSource.end();

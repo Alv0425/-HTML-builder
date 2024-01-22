@@ -25,7 +25,6 @@ const componentsHTML = {};
   await copyFiles(assetsSourcePath, destAssetsPath);
   // merge styles
   await getSources(stylesSourcesPath, sourcesStylesPaths, '.css');
-  await prepFile(stylesBundlePath);
   await mergeStyles();
   // generate HTML from template
   await getSources(htmlComponentsPath, htmlTemplPaths, '.html');
@@ -76,16 +75,16 @@ async function prepFile(src) {
   clearFile.write('');
 }
 
-// asynchronyosly merge files
 async function mergeStyles() {
+  const writeSource = fs.createWriteStream(stylesBundlePath, 'utf-8');
   for (const source of sourcesStylesPaths) {
-    const writeStyle = fs.createWriteStream(stylesBundlePath, {
-      flags: 'a',
-      encoding: 'utf-8',
+    const readSource = fs.createReadStream(source, 'utf-8');
+    readSource.on('open', () => {
+      writeSource.write(`/* ${path.basename(source)} */` + '\n');
     });
-    const readSource = fs.createReadStream(source, { encoding: 'utf-8' });
-    await pipeline(readSource, writeStyle);
+    await pipeline(readSource, writeSource, { end: false });
   }
+  writeSource.end();
 }
 
 /* ----------  Create directories three and copy assets  ----------  */

@@ -6,7 +6,7 @@ const copyDirPath = path.join(__dirname, 'files-copy');
 
 (async () => {
   await createDir(copyDirPath);
-  await extractInfo(sourceDirPath, copyDirPath);
+  await copyFiles(sourceDirPath, copyDirPath);
 })();
 
 async function createDir(newPath) {
@@ -20,14 +20,14 @@ async function createDir(newPath) {
   }
 }
 
-async function extractInfo(sourcePath, destPathBase) {
+async function copyFiles(sourcePath, destPathBase) {
   const allFiles = await readdir(sourcePath, { withFileTypes: true });
   for (const file of allFiles) {
     const filePath = path.join(file.path, file.name);
     if (file.isDirectory()) {
       const newBase = path.join(destPathBase, file.name);
       await createDir(newBase);
-      await extractInfo(filePath, newBase);
+      await copyFiles(filePath, newBase);
     } else {
       const copyPath = {
         input: filePath,

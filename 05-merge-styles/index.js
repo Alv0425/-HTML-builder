@@ -19,34 +19,21 @@ async function getSources() {
   sourcesPaths.push(...allStyles);
 }
 
-// if file already exists, rewrite content
-async function prepFile() {
-  const writeHeader = fs.createWriteStream(destPath, {
-    encoding: 'utf-8',
-  });
-  writeHeader.write('');
-}
-
 // asynchronyosly merge files
 async function mergeStyles() {
+  const writeSource = fs.createWriteStream(destPath, 'utf-8');
   for (const source of sourcesPaths) {
-    const writeDelimeter = fs.createWriteStream(destPath, {
-      flags: 'a',
-      encoding: 'utf-8',
+    const readSource = fs.createReadStream(source, 'utf-8');
+    readSource.on('open', () => {
+      writeSource.write(`/* ${path.basename(source)} */` + '\n');
     });
-    writeDelimeter.write(`/* ${path.basename(source)} */` + '\n');
-    const writeSource = fs.createWriteStream(destPath, {
-      flags: 'a',
-      encoding: 'utf-8',
-    });
-    const readSource = fs.createReadStream(source, { encoding: 'utf-8' });
-    await pipeline(readSource, writeSource);
+    await pipeline(readSource, writeSource, { end: false });
   }
+  writeSource.end();
 }
 
 // merge .css files to the bundle
 (async () => {
   await getSources();
-  await prepFile();
   await mergeStyles();
 })();
